@@ -1,0 +1,70 @@
+openapi: 3.0.0
+ 
+info:
+  title: API description of a Marketplace Application
+  description: 'OpenAPI Specification of the Application registration API'
+  version: '0.0.1'
+  x-application-name: HPC-app
+  x-application-id: 34245267-23bf-4ce5-ae48-bc5b67a65c94
+  x-mp-api: http://marketplace.org/ontology/v1_0_0/api_spec
+  x-external-hostname: https://127.0.0.1:5005/
+  x-image: https://raw.githubusercontent.com/aiidalab/aiidalab-widgets-base/master/miscellaneous/logos/aiidalab.png
+  x-products:
+    - name: HPC app
+      productId: 87f0189b-00b7-4ae3-a017-8d85e766d3d5
+servers:
+  - url: https://127.0.0.1:5005/
+
+paths:
+# Administrative paths
+  /:
+    get:
+      summary: heartbeat
+      description: To check if an application is alive
+      operationId: heartbeat
+      responses:
+        '200':
+          description: Success
+          content:
+            String:
+              schema:
+                type: string
+                example: "Is Alive"
+        '404':
+          description: Not found
+
+  /jobs:
+    get:
+      summary: get job list of user
+      description: Get the List of jobs
+      operationId: getTransformationList
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  example: ['transformationID-1','transformationID-2','...']
+        '404':
+          description: Not found  
+
+  /login:
+    get:
+      summary: login page frontend
+      description: Goes to login page of the application
+      operationId: frontend
+      responses:
+        '200':
+          description: Navigates to the page
+        '404':
+          description: Not found
+ 
+components:
+  securitySchemes:
+    AuthHeader:        
+      type: apiKey
+      in: header       
+      name: Authorization  
