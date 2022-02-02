@@ -18,7 +18,7 @@ from auth_middleware import token_required
 def hello():
     return "Hello World!"
 
-@app.route("/jobs", methods=["GET"])
+@app.route("/jobs/", methods=["GET"])
 @token_required
 def get_job_list(current_user):
     return jsonify({
@@ -57,7 +57,7 @@ def add_user():
             "data": None
         }, 500
 
-@app.route("/login", methods=["POST"])
+@app.route("/login/", methods=["POST"])
 def login():
     try:
         data = request.json

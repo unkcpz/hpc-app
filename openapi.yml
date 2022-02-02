@@ -5,7 +5,7 @@ info:
   description: 'OpenAPI Specification of the Application registration API'
   version: '0.0.1'
   x-application-name: HPC-app
-  x-application-id: 34245267-23bf-4ce5-ae48-bc5b67a65c94
+  x-application-id: 649cb858-3f16-4255-8434-5252eaa1a2e0
   x-mp-api: http://marketplace.org/ontology/v1_0_0/api_spec
   x-external-hostname: https://mp-hpc.herokuapp.com
   x-image: https://raw.githubusercontent.com/aiidalab/aiidalab-widgets-base/master/miscellaneous/logos/aiidalab.png
@@ -33,7 +33,7 @@ paths:
         '404':
           description: Not found
 
-  /jobs:
+  /jobs/:
     get:
       summary: get job list of user
       description: Get the List of jobs
@@ -51,7 +51,7 @@ paths:
         '404':
           description: Not found  
 
-  /login:
+  /login/:
     get:
       summary: login page frontend
       description: Goes to login page of the application
