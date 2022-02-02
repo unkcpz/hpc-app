@@ -6,7 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
 
-DATABASE_URL=os.environ.get('DATABASE_URL') or 'mongodb://localhost:27017/myDatabase'
+DATABASE_URL=f'mongodb+srv://mphpc:{os.environ.get("password")}@mongodb-heroku-mp-hpc-a.dzddt.mongodb.net/hpcdb?retryWrites=true&w=majority'
 print(DATABASE_URL)
 client = MongoClient(DATABASE_URL)
 db = client.myDatabase

@@ -18,7 +18,7 @@ from auth_middleware import token_required
 def hello():
     return "Hello World!"
 
-@app.route("/jobs/", methods=["GET"])
+@app.route("/jobs", methods=["GET"])
 @token_required
 def get_job_list(current_user):
     return jsonify({

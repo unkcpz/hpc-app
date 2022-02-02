@@ -7,13 +7,13 @@ info:
   x-application-name: HPC-app
   x-application-id: 34245267-23bf-4ce5-ae48-bc5b67a65c94
   x-mp-api: http://marketplace.org/ontology/v1_0_0/api_spec
-  x-external-hostname: https://127.0.0.1:5005/
+  x-external-hostname: https://mp-hpc.herokuapp.com
   x-image: https://raw.githubusercontent.com/aiidalab/aiidalab-widgets-base/master/miscellaneous/logos/aiidalab.png
   x-products:
     - name: HPC app
       productId: 87f0189b-00b7-4ae3-a017-8d85e766d3d5
 servers:
-  - url: https://127.0.0.1:5005/
+  - url: https://mp-hpc.herokuapp.com
 
 paths:
 # Administrative paths
