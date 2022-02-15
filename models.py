@@ -101,7 +101,7 @@ class User:
     def __init__(self):
         return
 
-    def create(self, name="", email="", password=""):
+    def create(self, name="", email=""):
         """Create a new user"""
         user = self.get_by_email(email)
         if user:
@@ -110,8 +110,7 @@ class User:
             {
                 "name": name,
                 "email": email,
-                "password": self.encrypt_password(password),
-                "active": True
+                "active": True,
             }
         )
         return self.get_by_id(new_user.inserted_id)
@@ -127,7 +126,6 @@ class User:
         if not user:
             return
         user["_id"] = str(user["_id"])
-        user.pop("password")
         return user
 
     def get_by_email(self, email):

@@ -2,18 +2,14 @@ import jwt, os
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from save_image import save_pic
-from validate import validate_book, validate_user, validate_email_and_password
+from validate import validate_book, validate_user
 from firecrest_sdk import Firecrest
 
 load_dotenv()
 
-WHITE_LIST = ['unkcpz', 'unkcpz1']
+WHITE_LIST = ['jusong.yeu@gmail.com']
 # Setup the client for the specific account
 client = Firecrest(firecrest_url="https://firecrest.cscs.ch/")
-    
-# submit(client, './run_demo.sh')
-# poll(client, jobs=[])
-# print(client.heartbeat())
 
 app = Flask(__name__)
 SECRET_KEY = os.environ.get('SECRET_KEY') or 'this is a secret'
@@ -21,17 +17,15 @@ print(SECRET_KEY)
 app.config['SECRET_KEY'] = SECRET_KEY
 
 from models import Books, User
-from auth_middleware import test_token_required, mp_token_required
-
-token_required = test_token_required
+from auth_middleware import token_required
 
 @app.route("/")
-@mp_token_required
+@token_required
 def heartbeat(current_user):
     user = User().get_by_email(current_user['email'])
     if not user:
         resp = {
-            'message': 'user not create yet, please login for first time.'
+            'message': 'user not create yet, please register for DB first time.'
         }
         return resp, 401
     else: 
@@ -57,140 +51,50 @@ def get_jobs(current_user):
     return fresp, 200
 
 @app.route("/userinfo_test/", methods=["GET"])
-@mp_token_required
+@token_required
 def get_userinfo(current_user):
-    
     return current_user, 200
 
-@app.route("/users/", methods=["POST"])
-def add_user():
+@app.route("/register/", methods=["GET"])
+@token_required
+def register(current_user):
     try:
-        user = request.json
-        if not user:
-            return {
-                "message": "Please provide user details",
-                "data": None,
-                "error": "Bad request"
-            }, 400
-        is_validated = validate_user(**user)
-        if is_validated is not True:
-            return dict(message='Invalid data', data=None, error=is_validated), 400
-        if user.get('name') not in WHITE_LIST:
-            return dict(message=f'Only users {WHITE_LIST} allowed.', data=None), 400
-        user = User().create(**user)
-        if not user:
-            return {
-                "message": "User already exists",
-                "error": "Conflict",
-                "data": None
-            }, 409
-        return {
-            "message": "Successfully created new user",
-            "data": user
-        }, 201
-    except Exception as e:
-        return {
-            "message": "Something went wrong",
-            "error": str(e),
-            "data": None
-        }, 500
-
-@app.route("/login/", methods=["POST"])
-def login():
-    """This api used only in test mode, the token will given for 
-    test_token_required auth"""
-    try:
-        data = request.json
-        if not data:
-            return {
-                "message": "Please provide user details",
-                "data": None,
-                "error": "Bad request"
-            }, 400
-        # validate input
-        is_validated = validate_email_and_password(data.get('email'), data.get('password'))
-        if is_validated is not True:
-            return dict(message='Invalid data', data=None, error=is_validated), 400
-        user = User().login(
-            data["email"],
-            data["password"]
-        )
-        if user:
+        email = current_user['email']
+        name = current_user['name']
+        if email in WHITE_LIST:
             try:
-                # token should expire after 24 hrs
-                user["token"] = jwt.encode(
-                    {"user_id": user["_id"]},
-                    app.config["SECRET_KEY"],
-                    algorithm="HS256"
-                )
-                return {
-                    "message": "Successfully fetched auth token",
-                    "data": user
-                }
+                user = User().create(name=name, email=email)
             except Exception as e:
                 return {
-                    "error": "Something went wrong",
-                    "message": str(e)
+                    'error': 'failed to create user in DB.'
                 }, 500
+        else:
+            return {
+                'error': f'User <{name}> is not allowed to access database.'
+            }, 406
+            
+        # user are created or aready exist (None return from create method)
+        if user:
+            # New db user created
+            resp = {
+                'message': 'New DB user created.',
+                'data': {
+                    'name': name,
+                    'email': email,
+                    '_id': user['_id']
+                }
+            } 
+            return resp, 200
+        else:
+             # Already exist in DB
+            return {
+                'message': 'Already registered in database.'
+            }, 200
+    except Exception as e:    
         return {
-            "message": "Error fetching auth token!, invalid email or password",
-            "data": None,
-            "error": "Unauthorized"
-        }, 404
-    except Exception as e:
-        return {
-                "message": "Something went wrong!",
-                "error": str(e),
-                "data": None
+            "error": "Something went wrong",
+            "message": str(e)
         }, 500
-
-
-# @app.route("/users/", methods=["GET"])
-# @token_required
-# def get_current_user(current_user):
-#     return jsonify({
-#         "message": "successfully retrieved user profile",
-#         "data": current_user
-#     })
-
-# @app.route("/users/", methods=["PUT"])
-# @token_required
-# def update_user(current_user):
-#     try:
-#         user = request.json
-#         if user.get("name"):
-#             user = User().update(current_user["_id"], user["name"])
-#             return jsonify({
-#                 "message": "successfully updated account",
-#                 "data": user
-#             }), 201
-#         return {
-#             "message": "Invalid data, you can only update your account name!",
-#             "data": None,
-#             "error": "Bad Request"
-#         }, 400
-#     except Exception as e:
-#         return jsonify({
-#             "message": "failed to update account",
-#             "error": str(e),
-#             "data": None
-#         }), 400
-
-# @app.route("/users/", methods=["DELETE"])
-# @token_required
-# def disable_user(current_user):
-#     try:
-#         User().disable_account(current_user["_id"])
-#         return jsonify({
-#             "message": "successfully disabled acount",
-#             "data": None
-#         }), 204
-#     except Exception as e:
-#         return jsonify({
-#             "message": "failed to disable account",
-#             "error": str(e),
-#             "data": None
-#         }), 400
 
 # @app.route("/books/", methods=["POST"])
 # @token_required

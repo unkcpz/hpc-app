@@ -1,47 +1,12 @@
 from functools import wraps
-import jwt
 from flask import request, abort
 from flask import current_app
-import models
+import requests
 import json
-from tornado.httpclient import HTTPRequest, HTTPClient
 
-def test_token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = None
-        if "Authorization" in request.headers:
-            token = request.headers["Authorization"].split(" ")[1]
-            print(token)
-        if not token:
-            return {
-                "message": "Authentication Token is missing!",
-                "data": None,
-                "error": "Unauthorized"
-            }, 401
-        try:
-            data=jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
-            current_user=models.User().get_by_id(data["user_id"])
-            if current_user is None:
-                return {
-                "message": "Invalid Authentication token!",
-                "data": None,
-                "error": "Unauthorized"
-            }, 401
-            if not current_user["active"]:
-                abort(403)
-        except Exception as e:
-            return {
-                "message": "Something went wrong",
-                "data": None,
-                "error": str(e)
-            }, 500
+USERINFO_URL = "https://staging.the-marketplace.eu/user-service/userinfo"
 
-        return f(current_user, *args, **kwargs)
-
-    return decorated
-
-def mp_token_required(f):
+def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
@@ -54,23 +19,20 @@ def mp_token_required(f):
                 "error": "Unauthorized"
             }, 401
         try:
-            http_client = HTTPClient()
             headers = {
                 "Accept": "application/json",
-                "User-Agent": "JupyterHub",
+                "User-Agent": "HPC-app",
                 "Authorization": f"Bearer {token}",
             }
 
             # Use GET request method
-            req = HTTPRequest(
-                "https://staging.the-marketplace.eu/user-service/userinfo",
-                method="GET",
+            resp = requests.get(
+                USERINFO_URL,
                 headers=headers,
-                validate_cert=False,
+                verify=None,
             )
-            # TODO make it async
-            resp = http_client.fetch(req)
-            current_user = json.loads(resp.body.decode('utf8', 'replace'))
+
+            current_user = resp.json()
 
             if current_user is None:
                 return {

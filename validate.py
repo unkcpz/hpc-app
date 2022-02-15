@@ -75,21 +75,3 @@ def validate_user(**args):
             'name': 'Name must be between 2 and 30 words'
         }
     return True
-
-def validate_email_and_password(email, password):
-    """Email and Password Validator"""
-    if not (email and password):
-        return {
-            'email': 'Email is required',
-            'password': 'Password is required'
-        }
-    if not validate_email(email):
-        return {
-            'email': 'Email is invalid'
-        }
-    if not validate_password(password):
-        return {
-            'password': 'Password is invalid, Should be atleast 8 characters with \
-                upper and lower case letters, numbers and special characters'
-        }
-    return True
