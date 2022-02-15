@@ -3,6 +3,8 @@ import jwt
 from flask import request, abort
 from flask import current_app
 import models
+import json
+from tornado.httpclient import HTTPRequest, HTTPClient
 
 def test_token_required(f):
     @wraps(f)
@@ -39,7 +41,7 @@ def test_token_required(f):
 
     return decorated
 
-def token_required(f):
+def mp_token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
@@ -86,4 +88,4 @@ def token_required(f):
 
         return f(current_user, *args, **kwargs)
 
-    return 
+    return decorated

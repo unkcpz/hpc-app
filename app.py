@@ -21,43 +21,28 @@ print(SECRET_KEY)
 app.config['SECRET_KEY'] = SECRET_KEY
 
 from models import Books, User
-from auth_middleware import test_token_required, token_required
+from auth_middleware import test_token_required, mp_token_required
 
 token_required = test_token_required
 
 @app.route("/")
-@token_required
+@mp_token_required
 def heartbeat(current_user):
-
-    # user = User().create(**current_user)
-    # if not user:
-    #     db_resp = {
-    #         'db': {
-    #             "message": "User already exists",
-    #             "error": "Warning",
-    #             "data": current_user,
-    #         },
-    #     }
-    # else: 
-    #     db_resp = {
-    #         'db': {
-    #             "message": "Successfully created new user",
-    #             "data": user,
-    #         },
-    #     }
-    resp = {
-        'db': {
-            "message": "User already exists",
-            "error": "Warning",
-            "data": current_user,
-        },
-    }
-    
-    try:
-        fresp = client.heartbeat()
-        resp.update(fresp)
-    except Exception as e:
-        raise e
+    user = User().get_by_email(current_user['email'])
+    if not user:
+        resp = {
+            'message': 'user not create yet, please login for first time.'
+        }
+        return resp, 401
+    else: 
+        resp = {
+            'message': 'user is available.'
+        }
+        try:
+            fresp = client.heartbeat()
+            resp.update(fresp)
+        except Exception as e:
+            raise e
     
     return resp, 200
 
@@ -70,6 +55,12 @@ def get_jobs(current_user):
         raise e
     
     return fresp, 200
+
+@app.route("/userinfo_test/", methods=["GET"])
+@mp_token_required
+def get_userinfo(current_user):
+    
+    return current_user, 200
 
 @app.route("/users/", methods=["POST"])
 def add_user():
@@ -106,6 +97,8 @@ def add_user():
 
 @app.route("/login/", methods=["POST"])
 def login():
+    """This api used only in test mode, the token will given for 
+    test_token_required auth"""
     try:
         data = request.json
         if not data:
