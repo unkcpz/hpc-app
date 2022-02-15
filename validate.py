@@ -70,7 +70,7 @@ def validate_user(**args):
             'password': 'Password is invalid, Should be atleast 8 characters with \
                 upper and lower case letters, numbers and special characters'
         }
-    if not 2 <= len(args['name'].split(' ')) <= 30:
+    if not 2 <= len(args['name']) <= 30:
         return {
             'name': 'Name must be between 2 and 30 words'
         }
