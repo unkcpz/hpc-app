@@ -2,7 +2,6 @@
 import bson, os
 from dotenv import load_dotenv
 from pymongo import MongoClient
-from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
 
@@ -11,64 +10,52 @@ print(DATABASE_URL)
 client = MongoClient(DATABASE_URL)
 db = client.myDatabase
 
-class Books:
-    """Books Model"""
+class Jobs:
+    """Jobs Model"""
     def __init__(self):
         return
 
-    def create(self, title="", description="", image_url="", category="", user_id=""):
-        """Create a new book"""
-        book = self.get_by_user_id_and_title(user_id, title)
-        if book:
+    def create(self, userid, jobid):
+        """Create a new job in DB"""
+        job = self.get_by_userid_and_jobid(userid, jobid)
+        if job:
             return
-        new_book = db.books.insert_one(
+        new_job = db.jobs.insert_one(
             {
-                "title": title,
-                "description": description,
-                "image_url": image_url,
-                "category": category,
-                "user_id": user_id
+                "jobid": jobid,
+                "userid": userid,
             }
         )
-        return self.get_by_id(new_book.inserted_id)
+        return self.get_by_id(new_job.inserted_id)
+    
+    def get_by_userid_and_jobid(self, userid, jobid):
+        """job"""
+        job = db.jobs.find_one({"userid": userid, "jobid": jobid})
+        if not job:
+            return
+        job["_id"] = str(job["_id"])
+        return 
+    
+    def get_by_id(self, jobid):
+        """Get a job given its jobid"""
+        job = db.jobs.find_one({"_id": bson.ObjectId(jobid)})
+        if not job:
+            return
+        job["_id"] = str(job["_id"])
+        return job
 
+    def get_by_userid(self, userid):
+        """Get all jobs created by a user"""
+        jobs = db.jobs.find({"userid": userid})
+        return [job.get('jobid') for job in jobs]
+    
     def get_all(self):
-        """Get all books"""
+        """For admin only"""
         books = db.books.find()
         return [{**book, "_id": str(book["_id"])} for book in books]
 
-    def get_by_id(self, book_id):
-        """Get a book by id"""
-        book = db.books.find_one({"_id": bson.ObjectId(book_id)})
-        if not book:
-            return
-        book["_id"] = str(book["_id"])
-        return book
 
-    def get_by_user_id(self, user_id):
-        """Get all books created by a user"""
-        books = db.books.find({"user_id": user_id})
-        return [{**book, "_id": str(book["_id"])} for book in books]
-       
-    def get_by_category(self, category):
-        """Get all books by category"""
-        books = db.books.find({"category": category})
-        return [book for book in books]
-
-    def get_by_user_id_and_category(self, user_id, category):
-        """Get all books by category for a particular user"""
-        books = db.books.find({"user_id": user_id, "category": category})
-        return [{**book, "_id": str(book["_id"])} for book in books]
-
-    def get_by_user_id_and_title(self, user_id, title):
-        """Get a book given its title and author"""
-        book = db.books.find_one({"user_id": user_id, "title": title})
-        if not book:
-            return
-        book["_id"] = str(book["_id"])
-        return book
-
-    def update(self, book_id, title="", description="", image_url="", category="", user_id=""):
+    def update(self, book_id, title="", description="", image_url="", category="", userid=""):
         """Update a book"""
         data={}
         if title: data["title"]=title
@@ -84,17 +71,6 @@ class Books:
         )
         book = self.get_by_id(book_id)
         return book
-
-    def delete(self, book_id):
-        """Delete a book"""
-        book = db.books.delete_one({"_id": bson.ObjectId(book_id)})
-        return book
-
-    def delete_by_user_id(self, user_id):
-        """Delete all books created by a user"""
-        book = db.books.delete_many({"user_id": bson.ObjectId(user_id)})
-        return book
-
 
 class User:
     """User Model"""
@@ -120,9 +96,9 @@ class User:
         users = db.users.find({"active": True})
         return [{**user, "_id": str(user["_id"])} for user in users]
 
-    def get_by_id(self, user_id):
+    def get_by_id(self, userid):
         """Get a user by id"""
-        user = db.users.find_one({"_id": bson.ObjectId(user_id), "active": True})
+        user = db.users.find_one({"_id": bson.ObjectId(userid), "active": True})
         if not user:
             return
         user["_id"] = str(user["_id"])
@@ -136,44 +112,32 @@ class User:
         user["_id"] = str(user["_id"])
         return user
 
-    def update(self, user_id, name=""):
+    def update(self, userid, name=""):
         """Update a user"""
         data = {}
         if name:
             data["name"] = name
         user = db.users.update_one(
-            {"_id": bson.ObjectId(user_id)},
+            {"_id": bson.ObjectId(userid)},
             {
                 "$set": data
             }
         )
-        user = self.get_by_id(user_id)
+        user = self.get_by_id(userid)
         return user
 
-    def delete(self, user_id):
+    def delete(self, userid):
         """Delete a user"""
-        Books().delete_by_user_id(user_id)
-        user = db.users.delete_one({"_id": bson.ObjectId(user_id)})
-        user = self.get_by_id(user_id)
+        Books().delete_by_userid(userid)
+        user = db.users.delete_one({"_id": bson.ObjectId(userid)})
+        user = self.get_by_id(userid)
         return user
 
-    def disable_account(self, user_id):
+    def disable_account(self, userid):
         """Disable a user account"""
         user = db.users.update_one(
-            {"_id": bson.ObjectId(user_id)},
+            {"_id": bson.ObjectId(userid)},
             {"$set": {"active": False}}
         )
-        user = self.get_by_id(user_id)
-        return user
-
-    def encrypt_password(self, password):
-        """Encrypt password"""
-        return generate_password_hash(password)
-
-    def login(self, email, password):
-        """Login a user"""
-        user = self.get_by_email(email)
-        if not user or not check_password_hash(user["password"], password):
-            return
-        user.pop("password")
+        user = self.get_by_id(userid)
         return user

@@ -1,9 +1,7 @@
 from firecrest import ClientCredentialsAuthorization
 from firecrest import Firecrest as CscsFirecrest
-import itertools
 import requests
-import json
-import time
+import io
 import os
 from dotenv import load_dotenv
 
@@ -48,30 +46,39 @@ class Firecrest(CscsFirecrest):
                
         return super().system(self._SYSTEM)
     
+    def submit(self, job_script):
+        """Submits a batch script to SLURM on the target system
+        :param job_script: the content of the script (if it's local it can be relative path, if it is on the machine it has to be the absolute path)
+        :type job_script: string
+        :calls: POST `/compute/jobs/upload` or POST `/compute/jobs/path`
+                GET `/tasks/{taskid}`
+        :rtype: dictionary
+        """
+        return super().submit(machine=self._MACHINE, job_script=job_script, local_file=True)
         
-    # def submit(self, job_script, local_file=True):
-    #     """Submits a batch script to SLURM on the target system
-    #     :param job_script: the path of the script (if it's local it can be relative path, if it is on the machine it has to be the absolute path)
-    #     :type job_script: string
-    #     :param local_file: batch file can be local (default) or on the machine's filesystem
-    #     :type local_file: boolean, optional
-    #     :calls: POST `/compute/jobs/upload` or POST `/compute/jobs/path`
-    #             GET `/tasks/{taskid}`
-    #     :rtype: dictionary
-    #     """
-    #     self._current_method_requests = []
-    #     submit_resp = self._submit_request(self._MACHINE, job_script, local_file)
-    #     task_id = submit_resp["task_id"]
-        
-    #     res = self._poll_tasks(
-    #         task_id, "200", itertools.cycle([1, 5, 10])
-    #     )
-    #     job_id = res['jobid']
-        
-    #     # store `job_id` in the DB with the user name
-        
-    #     return res
-        
+    # Compute
+    def _submit_request(self, machine, job_script: str, local_file):
+        """Override so job_script can be a string"""
+        headers = {
+            "Authorization": f"Bearer {self._authorization.get_access_token()}",
+            "X-Machine-Name": machine,
+        }
+        if local_file:
+            url = f"{self._firecrest_url}/compute/jobs/upload"
+            files = {"file": io.StringIO(job_script)}
+            resp = requests.post(
+                url=url, headers=headers, files=files, verify=self._verify
+            )
+        else:
+            url = f"{self._firecrest_url}/compute/jobs/path"
+            data = {"targetPath": job_script}
+            resp = requests.post(
+                url=url, headers=headers, data=data, verify=self._verify
+            )
+
+        self._current_method_requests.append(resp)
+        return self._json_response(self._current_method_requests, 201)
+    
     def poll(self, jobs=[], start_time=None, end_time=None):
         """Retrieves information about submitted jobs.
         This call uses the `sacct` command.

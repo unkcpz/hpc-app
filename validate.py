@@ -19,12 +19,12 @@ def validate_email(email: str):
 def validate_book(**args):
     """Book Validator"""
     if not args.get('title') or not args.get('image_url') \
-        or not args.get('category') or not args.get('user_id'):
+        or not args.get('category') or not args.get('userid'):
         return {
             'title': 'Title is required',
             'image_url': 'Image URL is required',
             'category': 'Category is required',
-            'user_id': 'User ID is required'
+            'userid': 'User ID is required'
         }
     if args.get('category') not in ['romance', 'peotry', 'politics' 'picture book', 'science', 'fantasy', 'horror', 'thriller']:
         return {
@@ -32,10 +32,10 @@ def validate_book(**args):
             'message': 'Invalid category'
         }
     try:
-        ObjectId(args.get('user_id'))
+        ObjectId(args.get('userid'))
     except:
         return {
-            'user_id': 'User ID must be valid'
+            'userid': 'User ID must be valid'
         }
     if not isinstance(args.get('title'), str) or not isinstance(args.get('description'), str) \
         or not isinstance(args.get('image_url'), str):
