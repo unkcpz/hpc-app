@@ -1,7 +1,11 @@
 import jwt, os
+import io
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+from flask import Response, stream_with_context
+from flask import send_file
 from firecrest_sdk import Firecrest
+import requests
 
 load_dotenv()
 
@@ -101,38 +105,13 @@ def register(current_user):
         
 @app.route("/submit/", methods=["POST"])
 @token_required
-def block_submit(current_user):
-    job_tmpl = """#!/bin/bash
-
-#SBATCH --job-name={job_name}
-#SBATCH --ntasks={ntasks}
-#SBATCH --time={time}
-
-{exec_line}
-"""
+def submit(current_user):
     data = request.json
-    job_script = job_tmpl.format(
-        job_name=data.get('job_name'), 
-        ntasks=data.get('ntasks'), 
-        time=data.get('time'),
-        exec_line=data.get('exec_line'),
-    )
+    path = data.get('path')
+    script_path = os.path.join(path, '_submit.sh')
+    # TODO: check user has access to the path and the job script exist
     try:
-        resp = client.submit(job_script=job_script)
-        # resp = {
-        #     'content': job_script,
-        # }
-        
-        #### resp example
-        # {
-        #     "job_data_err": "",
-        #     "job_data_out": "",
-        #     "job_file": "/scratch/snx3000/jyu/firecrest/3b5c96f13565b5fecb6d700fe7d4f524/file",
-        #     "job_file_err": "/scratch/snx3000/jyu/firecrest/3b5c96f13565b5fecb6d700fe7d4f524/slurm-36734653.out",
-        #     "job_file_out": "/scratch/snx3000/jyu/firecrest/3b5c96f13565b5fecb6d700fe7d4f524/slurm-36734653.out",
-        #     "jobid": 36734653,
-        #     "result": "Job submitted"
-        # }
+        resp = client.submit(job_script=script_path)
         user = User().get_by_email(current_user['email'])
         userid = user['_id']
         jobid = resp.get('jobid')
@@ -142,7 +121,7 @@ def block_submit(current_user):
         
     except Exception as e:
         return {
-            "function": 'block_submit',
+            "function": 'ubmit',
             "error": "Something went wrong",
             "message": str(e)
         }, 500
@@ -162,6 +141,27 @@ def list_jobs(current_user):
         raise e
     
     return fresp, 200
+
+@app.route("/download/", methods=["GET"])
+# @token_required
+def download_remote():
+    """
+    Downloads the remote files from the cluster.
+    :param path: path string relative to the parent `/scratch/snx3000/jyu/firecrest/`
+    :return: file.
+    """
+    data = request.json
+    relpath = data.get('relpath')
+    source_path = os.path.join('/scratch/snx3000/jyu/firecrest/', relpath)
+    binary_stream = io.BytesIO()
+    
+    client.simple_download(source_path=source_path, target_path=binary_stream)
+
+    download_name = os.path.basename(relpath)
+    binary_stream.seek(0) # buffer position from start
+    resp = send_file(path_or_file=binary_stream, download_name=download_name)
+    
+    return resp, 200
 
 @app.errorhandler(403)
 def forbidden(e):
@@ -183,5 +183,5 @@ def forbidden(e):
 if __name__ == "__main__":
     app.run(debug=True, 
             port=5005, 
-            ssl_context='adhoc'
+            # ssl_context='adhoc'
     )

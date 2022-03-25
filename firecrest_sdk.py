@@ -48,37 +48,46 @@ class Firecrest(CscsFirecrest):
     
     def submit(self, job_script):
         """Submits a batch script to SLURM on the target system
-        :param job_script: the content of the script (if it's local it can be relative path, if it is on the machine it has to be the absolute path)
-        :type job_script: string
-        :calls: POST `/compute/jobs/upload` or POST `/compute/jobs/path`
+        :param job_script: on the machine it has to be the absolute path
+        :type job_script: string of path
+        :calls: POST `/compute/jobs/path`
                 GET `/tasks/{taskid}`
         :rtype: dictionary
         """
-        return super().submit(machine=self._MACHINE, job_script=job_script, local_file=True)
+        # TODO check path is abs path else raise
+        return super().submit(machine=self._MACHINE, job_script=job_script, local_file=False)
+    
+    def simple_download(self, source_path, target_path):
+        """Blocking call to download a small file.
+        The maximun size of file that is allowed can be found from the parameters() call.
+        :param source_path: the absolute source path
+        :type source_path: string
+        :param target_path: binary stream
+        :type target_path: binary stream
+        :calls: GET `/utilities/download`
+        :rtype: None
+        """
+        from contextlib import nullcontext
         
-    # Compute
-    def _submit_request(self, machine, job_script: str, local_file):
-        """Override so job_script can be a string"""
+        url = f"{self._firecrest_url}/utilities/download"
         headers = {
             "Authorization": f"Bearer {self._authorization.get_access_token()}",
-            "X-Machine-Name": machine,
+            "X-Machine-Name": self._MACHINE,
         }
-        if local_file:
-            url = f"{self._firecrest_url}/compute/jobs/upload"
-            files = {"file": io.StringIO(job_script)}
-            resp = requests.post(
-                url=url, headers=headers, files=files, verify=self._verify
-            )
-        else:
-            url = f"{self._firecrest_url}/compute/jobs/path"
-            data = {"targetPath": job_script}
-            resp = requests.post(
-                url=url, headers=headers, data=data, verify=self._verify
-            )
-
-        self._current_method_requests.append(resp)
-        return self._json_response(self._current_method_requests, 201)
-    
+        params = {"sourcePath": source_path}
+        resp = requests.get(
+            url=url, headers=headers, params=params, verify=self._verify
+        )
+        # print(resp.content)
+        self._json_response([resp], 200)
+        context = (
+            open(target_path, "wb")
+            if isinstance(target_path, str)
+            else nullcontext(target_path)
+        )
+        with context as f:
+            f.write(resp.content)
+            
     def poll(self, jobs=[], start_time=None, end_time=None):
         """Retrieves information about submitted jobs.
         This call uses the `sacct` command.
