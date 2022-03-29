@@ -6,17 +6,28 @@ from flask import Response, stream_with_context
 from flask import send_file
 from firecrest_sdk import Firecrest
 import requests
+from flask import Flask, flash, request, redirect, url_for
+from werkzeug.utils import secure_filename
 
 load_dotenv()
 
 WHITE_LIST = ['jusong.yeu@gmail.com']
 # Setup the client for the specific account
 client = Firecrest(firecrest_url="https://firecrest.cscs.ch/")
+ROOT_FOLDER = '/scratch/snx3000/jyu/firecrest/'
+
+ALLOWED_EXTENSIONS = {'txt', 'sh', 'in', 'out'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 app = Flask(__name__)
 SECRET_KEY = os.environ.get('SECRET_KEY') or 'this is a secret'
 print(SECRET_KEY)
+
 app.config['SECRET_KEY'] = SECRET_KEY
+app.config['ROOT_FOLDER'] = ROOT_FOLDER
 
 from models import Jobs, User
 from auth_middleware import token_required
@@ -142,22 +153,68 @@ def list_jobs(current_user):
     
     return fresp, 200
 
-@app.route("/download/", methods=["GET"])
+@app.route("/download/<resource>", methods=["GET"])
 # @token_required
-def download_remote():
+def download_remote(resource):
     """
     Downloads the remote files from the cluster.
-    :param path: path string relative to the parent `/scratch/snx3000/jyu/firecrest/`
+    :param path: path string relative to the parent ROOT_PATH=`/scratch/snx3000/jyu/firecrest/`
     :return: file.
     """
     data = request.json
-    relpath = data.get('relpath')
-    source_path = os.path.join('/scratch/snx3000/jyu/firecrest/', relpath)
+    filename = data.get('filename')
+    source_path = os.path.join(ROOT_FOLDER, resource, filename)
     binary_stream = io.BytesIO()
     
     client.simple_download(source_path=source_path, target_path=binary_stream)
 
-    download_name = os.path.basename(relpath)
+    download_name = os.path.basename(filename)
+    binary_stream.seek(0) # buffer position from start
+    resp = send_file(path_or_file=binary_stream, download_name=download_name)
+    
+    return resp, 200
+
+@app.route("/upload/<resource>", methods=["PUT"])
+# @token_required
+def upload_remote(resource):
+    """
+    Upload the file to the cluster. to folder ROOT_PATH=`/scratch/snx3000/jyu/firecrest/`
+    """
+    if 'file' not in request.files:
+        flash('No file part')
+        return jsonify({
+            "message": "No file part",
+            "error": str('error'),
+            "data": None
+        }), 403
+        
+    file = request.files['file']
+    target_path = os.path.join(app.config['ROOT_FOLDER'], resource)
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        binary_stream = io.BytesIO(file.read())
+        
+        resp = client.simple_upload(binary_stream, target_path, filename)
+    
+        return resp, 200
+    
+@app.route("/delete/<resource>", methods=["GET"])
+# @token_required
+def download_remote(resource):
+    """
+    Downloads the remote files from the cluster.
+    :param path: path string relative to the parent ROOT_PATH=`/scratch/snx3000/jyu/firecrest/`
+    :return: file.
+    """
+    data = request.json
+    filename = data.get('filename')
+    source_path = os.path.join(ROOT_FOLDER, resource, filename)
+    binary_stream = io.BytesIO()
+    
+    client.simple_download(source_path=source_path, target_path=binary_stream)
+
+    download_name = os.path.basename(filename)
     binary_stream.seek(0) # buffer position from start
     resp = send_file(path_or_file=binary_stream, download_name=download_name)
     

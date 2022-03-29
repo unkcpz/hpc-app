@@ -3,6 +3,7 @@ from firecrest import Firecrest as CscsFirecrest
 import requests
 import io
 import os
+from contextlib import nullcontext
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -67,7 +68,6 @@ class Firecrest(CscsFirecrest):
         :calls: GET `/utilities/download`
         :rtype: None
         """
-        from contextlib import nullcontext
         
         url = f"{self._firecrest_url}/utilities/download"
         headers = {
@@ -80,13 +80,40 @@ class Firecrest(CscsFirecrest):
         )
         # print(resp.content)
         self._json_response([resp], 200)
-        context = (
-            open(target_path, "wb")
-            if isinstance(target_path, str)
-            else nullcontext(target_path)
-        )
+        context = nullcontext(target_path)
+
         with context as f:
             f.write(resp.content)
+            
+    def simple_upload(self, source_path, target_path, filename):
+        """Blocking call to upload a small file.
+        The file that will be uploaded will have the same name as the source_path.
+        The maximum size of file that is allowed can be found from the parameters() call.
+        :param machine: the machine name where the filesystem belongs to
+        :type machine: string
+        :param source_path: binary stream
+        :type source_path: binary stream
+        :param target_path: the absolute target path of the directory where the file will be uploaded
+        :type target_path: string
+        :calls: POST `/utilities/upload`
+        :rtype: None
+        """
+
+        url = f"{self._firecrest_url}/utilities/upload"
+        headers = {
+            "Authorization": f"Bearer {self._authorization.get_access_token()}",
+            "X-Machine-Name": self._MACHINE,
+        }
+        context = nullcontext(source_path)
+
+        with context as f:
+            data = {"targetPath": target_path}
+            files = {"file": (filename, f)}
+            resp = requests.post(
+                url=url, headers=headers, data=data, files=files, verify=self._verify
+            )
+
+        return self._json_response([resp], 201)
             
     def poll(self, jobs=[], start_time=None, end_time=None):
         """Retrieves information about submitted jobs.
