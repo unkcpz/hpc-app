@@ -199,9 +199,9 @@ def upload_remote(resource):
     
         return resp, 200
     
-@app.route("/delete/<resource>", methods=["GET"])
+@app.route("/delete/<resource>", methods=["DELETE"])
 # @token_required
-def download_remote(resource):
+def delete_remote(resource):
     """
     Downloads the remote files from the cluster.
     :param path: path string relative to the parent ROOT_PATH=`/scratch/snx3000/jyu/firecrest/`
@@ -209,16 +209,12 @@ def download_remote(resource):
     """
     data = request.json
     filename = data.get('filename')
-    source_path = os.path.join(ROOT_FOLDER, resource, filename)
-    binary_stream = io.BytesIO()
+    target_path = os.path.join(ROOT_FOLDER, resource, filename)
     
-    client.simple_download(source_path=source_path, target_path=binary_stream)
+    client.simple_delete(target_path=target_path)
+    
+    return '', 204
 
-    download_name = os.path.basename(filename)
-    binary_stream.seek(0) # buffer position from start
-    resp = send_file(path_or_file=binary_stream, download_name=download_name)
-    
-    return resp, 200
 
 @app.errorhandler(403)
 def forbidden(e):

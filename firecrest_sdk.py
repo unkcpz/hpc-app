@@ -89,8 +89,6 @@ class Firecrest(CscsFirecrest):
         """Blocking call to upload a small file.
         The file that will be uploaded will have the same name as the source_path.
         The maximum size of file that is allowed can be found from the parameters() call.
-        :param machine: the machine name where the filesystem belongs to
-        :type machine: string
         :param source_path: binary stream
         :type source_path: binary stream
         :param target_path: the absolute target path of the directory where the file will be uploaded
@@ -114,6 +112,24 @@ class Firecrest(CscsFirecrest):
             )
 
         return self._json_response([resp], 201)
+    
+    def simple_delete(self, target_path):
+        """Blocking call to delete a small file.
+        :param target_path: the absolute target path
+        :type target_path: string
+        :calls: DELETE `/utilities/rm`
+        :rtype: None
+        """
+
+        url = f"{self._firecrest_url}/utilities/rm"
+        headers = {
+            "Authorization": f"Bearer {self._authorization.get_access_token()}",
+            "X-Machine-Name": self._MACHINE,
+        }
+        data = {"targetPath": target_path}
+        resp = requests.delete(url=url, headers=headers, data=data, verify=self._verify)
+        
+        self._json_response([resp], 204)
             
     def poll(self, jobs=[], start_time=None, end_time=None):
         """Retrieves information about submitted jobs.
