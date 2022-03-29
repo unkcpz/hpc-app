@@ -16,7 +16,7 @@ WHITE_LIST = ['jusong.yeu@gmail.com']
 client = Firecrest(firecrest_url="https://firecrest.cscs.ch/")
 ROOT_FOLDER = '/scratch/snx3000/jyu/firecrest/'
 
-ALLOWED_EXTENSIONS = {'txt', 'sh', 'in', 'out'}
+ALLOWED_EXTENSIONS = {'txt', 'sh', 'in'}
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -34,6 +34,15 @@ from auth_middleware import token_required
 
 def helper_get_db_userid(mp_user):
     pass
+
+def email2repo(email):
+    """Since the username allowed space character contained it is not proper to be 
+    directly used as repo (folder) name
+    this helper function will convert space to underscore"""
+    username = email.split('@')[0] # get username of email
+    repo = username.replace('.', '_')
+    
+    return repo
     
 @app.route("/")
 @token_required
@@ -81,6 +90,7 @@ def register(current_user):
         name = current_user['name']
         if email in WHITE_LIST:
             try:
+                # user name and email validate
                 user = User().create(name=name, email=email)
             except Exception as e:
                 return {
@@ -93,9 +103,13 @@ def register(current_user):
             
         # user are created or aready exist (None return from create method)
         if user:
+            # create the repository for user to store file
+            repo = email2repo(email)
+            client.mkdir(target_path=os.path.join(app.config['ROOT_FOLDER'], repo))
+            
             # New db user created
             resp = {
-                'message': 'New DB user created.',
+                'message': 'New database and repository are created.',
                 'data': {
                     'name': name,
                     'email': email,
@@ -154,16 +168,19 @@ def list_jobs(current_user):
     return fresp, 200
 
 @app.route("/download/<resource>", methods=["GET"])
-# @token_required
-def download_remote(resource):
+@token_required
+def download_remote(current_user, resource):
     """
     Downloads the remote files from the cluster.
     :param path: path string relative to the parent ROOT_PATH=`/scratch/snx3000/jyu/firecrest/`
     :return: file.
     """
+    repo = email2repo(current_user['email'])
+    
     data = request.json
     filename = data.get('filename')
-    source_path = os.path.join(ROOT_FOLDER, resource, filename)
+    source_path = os.path.join(ROOT_FOLDER, repo, resource, filename)
+    app.logger.debug(source_path)
     binary_stream = io.BytesIO()
     
     client.simple_download(source_path=source_path, target_path=binary_stream)
@@ -175,11 +192,13 @@ def download_remote(resource):
     return resp, 200
 
 @app.route("/upload/<resource>", methods=["PUT"])
-# @token_required
-def upload_remote(resource):
+@token_required
+def upload_remote(current_user, resource):
     """
     Upload the file to the cluster. to folder ROOT_PATH=`/scratch/snx3000/jyu/firecrest/`
     """
+    repo = email2repo(current_user['email'])
+    
     if 'file' not in request.files:
         flash('No file part')
         return jsonify({
@@ -189,7 +208,7 @@ def upload_remote(resource):
         }), 403
         
     file = request.files['file']
-    target_path = os.path.join(app.config['ROOT_FOLDER'], resource)
+    target_path = os.path.join(app.config['ROOT_FOLDER'], repo, resource)
     
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
@@ -200,16 +219,18 @@ def upload_remote(resource):
         return resp, 200
     
 @app.route("/delete/<resource>", methods=["DELETE"])
-# @token_required
-def delete_remote(resource):
+@token_required
+def delete_remote(current_user, resource):
     """
     Downloads the remote files from the cluster.
     :param path: path string relative to the parent ROOT_PATH=`/scratch/snx3000/jyu/firecrest/`
     :return: file.
     """
+    repo = email2repo(current_user['email'])
+    
     data = request.json
     filename = data.get('filename')
-    target_path = os.path.join(ROOT_FOLDER, resource, filename)
+    target_path = os.path.join(ROOT_FOLDER, repo, resource, filename)
     
     client.simple_delete(target_path=target_path)
     

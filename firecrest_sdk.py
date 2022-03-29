@@ -130,6 +130,16 @@ class Firecrest(CscsFirecrest):
         resp = requests.delete(url=url, headers=headers, data=data, verify=self._verify)
         
         self._json_response([resp], 204)
+        
+    def mkdir(self, target_path):
+        """Creates a new directory.
+        :param target_path: the absolute target path
+        :type target_path: string
+        :calls: POST `/utilities/mkdir`
+        :rtype: None
+        """
+        # p=True so that always create parent folder
+        super().mkdir(self._MACHINE, target_path, p=True)
             
     def poll(self, jobs=[], start_time=None, end_time=None):
         """Retrieves information about submitted jobs.
