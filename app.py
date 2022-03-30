@@ -286,5 +286,5 @@ def forbidden(e):
 if __name__ == "__main__":
     app.run(debug=True, 
             port=5005, 
-            # ssl_context='adhoc'
+            ssl_context='adhoc'
     )

@@ -3,7 +3,7 @@ openapi: 3.0.0
 info:
   title: API description of a Marketplace Application
   description: 'OpenAPI Specification of the Application registration API'
-  version: '0.0.1'
+  version: '0.0.2'
   x-application-name: HPC-app
   x-application-id: 649cb858-3f16-4255-8434-5252eaa1a2e0
   x-mp-api: http://marketplace.org/ontology/v1_0_0/api_spec
