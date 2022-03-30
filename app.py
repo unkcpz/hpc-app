@@ -8,6 +8,7 @@ from firecrest_sdk import Firecrest
 import requests
 from flask import Flask, flash, request, redirect, url_for
 from werkzeug.utils import secure_filename
+import uuid
 
 load_dotenv()
 
@@ -128,13 +129,41 @@ def register(current_user):
             "message": str(e)
         }, 500
         
-@app.route("/submit/", methods=["POST"])
+
+@app.route("/jobs/new", methods=["POST"])
 @token_required
-def submit(current_user):
-    data = request.json
-    path = data.get('path')
-    script_path = os.path.join(path, '_submit.sh')
-    # TODO: check user has access to the path and the job script exist
+def create_job(current_user):
+    """This will essentially create a workdir in user repo
+    and return the folder name as resourceId"""
+    repo = email2repo(current_user['email'])
+    
+    # the folder name (resource) is a 
+    resource = str(uuid.uuid4())
+    
+    try:
+        target_path = os.path.join(app.config['ROOT_FOLDER'], repo, resource)
+        client.mkdir(target_path=target_path)
+    except Exception as e:
+        return {
+            "function": 'create_job',
+            "error": f"unable to mkdir {target_path}",
+            "message": str(e)
+        }, 500
+    else:
+        return {
+            'resourceId': resource,
+        }, 200
+
+@app.route("/jobs/run/<resource>", methods=["POST"])
+@token_required
+def run_job(current_user, resource):
+    """Submit job from the folder and return jobid"""
+    repo = email2repo(current_user['email'])
+    
+    workdir = os.path.join(ROOT_FOLDER, repo, resource)
+    
+    script_path = os.path.join(workdir, 'submit.sh')
+    # TODO: check (error return code) the job script exist
     try:
         resp = client.submit(job_script=script_path)
         user = User().get_by_email(current_user['email'])
@@ -146,7 +175,7 @@ def submit(current_user):
         
     except Exception as e:
         return {
-            "function": 'ubmit',
+            "function": 'submit',
             "error": "Something went wrong",
             "message": str(e)
         }, 500
@@ -216,7 +245,7 @@ def upload_remote(current_user, resource):
         
         resp = client.simple_upload(binary_stream, target_path, filename)
     
-        return resp, 200
+        return resp, 201
     
 @app.route("/delete/<resource>", methods=["DELETE"])
 @token_required
