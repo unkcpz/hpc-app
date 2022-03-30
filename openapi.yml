@@ -61,6 +61,125 @@ paths:
           description: Navigates to the page
         '404':
           description: Not found
+
+  /jobs/new:
+    post:
+      security:
+        - bearerAuth: []
+      summary: newTransformation
+      description: Initialize a Transformation
+      operationId: newTransformation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransformationConfig'
+      responses:
+        '200':
+          description: Success
+          content:
+            resourceId:
+              schema:
+                type: string
+                example: "3e22541c-a95e-4443-8cdc-0866171d343b"
+        '400':
+          description: Bad Request
+          content:
+            error:
+              schema:
+                type: string
+                example: "Wrong configuration input"
+        '404':
+          description: Not found
+
+  /jobs/run/{resource}:
+    post:
+      security:
+        - bearerAuth: []
+      summary: startTransformation
+      description: Start execution of a Transformation
+      operationId: startTransformation
+      parameters: 
+        - in: path
+          name: resource
+          schema: 
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Success
+        '404':
+          description: Not found
+
+  /download/{resource}:
+    parameters:
+      - in: path
+        name: resource
+        schema: 
+          type: string
+        required: true
+    get:
+      security:
+        - bearerAuth: []
+      summary: getDataset
+      description: Fetches a particular Dataset
+      operationId: getDataset
+      responses:
+        '200':
+          description: Success
+          content:
+            "*/*":
+              schema:
+                type: object
+        '404':
+          description: Not found
+        '400':
+          description: Bad Request
+
+  /upload/{resource}:
+    parameters:
+      - in: path
+        name: resource
+        schema: 
+          type: string
+        required: true
+    put:
+      security:
+        - bearerAuth: []
+      summary: updateDataset
+      description: Edit a dataset
+      operationId: updateDataset
+      requestBody:
+          content:
+            "*/*":
+              schema:
+                type: object
+      responses:
+        '200':
+          description: Success
+        '404':
+          description: Not found
+        '400':
+          description: Bad Request
+
+  /delete/{resource}:
+    parameters:
+      - in: path
+        name: resource
+        schema: 
+          type: string
+        required: true
+    delete:
+      security:
+        - bearerAuth: []
+      summary: deleteDataset
+      description: Delete a dataset
+      operationId: deleteDataset
+      responses:
+        '204':
+          description: The resource was deleted successfully.
+        '404':
+          description: Not found
  
 components:
   securitySchemes:
