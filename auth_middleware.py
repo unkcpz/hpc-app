@@ -4,7 +4,7 @@ from flask import current_app
 import requests
 import json
 
-USERINFO_URL = "https://staging.the-marketplace.eu/user-service/userinfo"
+USERINFO_URL = "https://www.materials-marketplace.eu/auth/realms/marketplace/protocol/openid-connect/userinfo"
 
 def token_required(f):
     @wraps(f)
@@ -32,7 +32,10 @@ def token_required(f):
                 verify=None,
             )
 
-            current_user = resp.json()
+            if resp.status_code == 200:
+                current_user = resp.json()
+            else:
+                current_user = None
 
             if current_user is None:
                 return {

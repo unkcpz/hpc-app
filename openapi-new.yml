@@ -1,0 +1,219 @@
+---
+openapi: 3.0.0
+
+info:
+    title: HPC app
+    description: Access to HPC through firecrest
+    version: 0.1.1
+    x-application-name: HPC app
+    x-oauth-client:
+        client-id:
+        scopes:
+            - email
+            - openid
+            - profile
+        callback: https://mp-hpc.herokuapp.com/auth_callback
+    x-external-hostname: https://mp-hpc.herokuapp.com
+    x-image: https://raw.githubusercontent.com/aiidalab/aiidalab-widgets-base/master/miscellaneous/logos/aiidalab.png
+    x-contacts:
+        - jusong.yu@epfl.ch
+    x-products:
+        - name: HPC app
+          productId:
+servers:
+  - url: https://mp-hpc.herokuapp.com
+
+paths:
+# Administrative paths
+  /:
+    get:
+      security:
+        - bearerAuth: []
+      summary: heartbeat
+      description: To check if an application is alive
+      operationId: heartbeat
+      responses:
+        '200':
+          description: Success
+          content:
+            String:
+              schema:
+                type: string
+                example: "Is Alive"
+        '404':
+          description: Not found
+
+  /jobs/:
+    get:
+      security:
+        - bearerAuth: []
+      summary: get job list of user
+      description: Get the List of jobs
+      operationId: getTransformationList
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  example: ['transformationID-1','transformationID-2','...']
+        '404':
+          description: Not found  
+
+  /login/:
+    get:
+      security:
+        - bearerAuth: []
+      summary: login page frontend
+      description: Goes to login page of the application
+      operationId: frontend
+      responses:
+        '200':
+          description: Navigates to the page
+        '404':
+          description: Not found
+
+  /jobs/new:
+    post:
+      security:
+        - bearerAuth: []
+      summary: newTransformation
+      description: Initialize a Transformation
+      operationId: newTransformation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransformationConfig'
+      responses:
+        '200':
+          description: Success
+          content:
+            resourceId:
+              schema:
+                type: string
+                example: "3e22541c-a95e-4443-8cdc-0866171d343b"
+        '400':
+          description: Bad Request
+          content:
+            error:
+              schema:
+                type: string
+                example: "Wrong configuration input"
+        '404':
+          description: Not found
+
+  /jobs/run/{resource}:
+    post:
+      security:
+        - bearerAuth: []
+      summary: startTransformation
+      description: Start execution of a Transformation
+      operationId: startTransformation
+      parameters: 
+        - in: path
+          name: resource
+          schema: 
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Success
+        '404':
+          description: Not found
+
+  /download/{resource}:
+    get:
+      security:
+        - bearerAuth: []
+      summary: getDataset
+      description: Fetches a particular Dataset
+      operationId: getDataset
+      parameters:
+        - in: path
+          name: resource
+          schema: 
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            "*/*":
+              schema:
+                type: object
+        '404':
+          description: Not found
+        '400':
+          description: Bad Request
+
+  /upload/{resource}:
+    put:
+      security:
+        - bearerAuth: []
+      summary: updateDataset
+      description: Edit a dataset
+      operationId: updateDataset
+      parameters:
+        - in: path
+          name: resource
+          schema: 
+            type: string
+          required: true
+      requestBody:
+          content:
+            "*/*":
+              schema:
+                type: object
+      responses:
+        '200':
+          description: Success
+        '404':
+          description: Not found
+        '400':
+          description: Bad Request
+
+  /delete/{resource}:
+    delete:
+      security:
+        - bearerAuth: []
+      summary: deleteDataset
+      description: Delete a dataset
+      operationId: deleteDataset
+      parameters:
+        - in: path
+          name: resource
+          schema: 
+            type: string
+          required: true
+      responses:
+        '204':
+          description: The resource was deleted successfully.
+        '404':
+          description: Not found
+ 
+components:
+  securitySchemes:
+    AuthHeader:        
+      type: apiKey
+      in: header       
+      name: Authorization  
+  TransformationConfig:
+    title: TransformationConfig
+    required:
+      - Configuration
+    type: object
+    properties:
+      name:
+        title: Name
+        type: string
+      description:
+        title: Description
+        type: string
+      configuration:
+        title: Configuration
+        type: object
+    description: 'Transformation data model '

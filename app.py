@@ -12,7 +12,7 @@ import uuid
 
 load_dotenv()
 
-WHITE_LIST = ['jusong.yeu@gmail.com']
+WHITE_LIST = ['jusong.yu@epfl.ch']
 # Setup the client for the specific account
 client = Firecrest(firecrest_url="https://firecrest.cscs.ch/")
 ROOT_FOLDER = '/scratch/snx3000/jyu/firecrest/'
@@ -189,6 +189,11 @@ def list_jobs(current_user):
     userid = user['_id']
     
     jobs = Jobs().get_by_userid(userid)
+    app.logger.debug(userid)
+    app.logger.debug(jobs)
+    if not jobs:
+        return f"no jobs in list of user {user['name']}", 400
+        
     try:
         fresp = client.poll(jobs=jobs)
     except Exception as e:
@@ -286,5 +291,5 @@ def forbidden(e):
 if __name__ == "__main__":
     app.run(debug=True, 
             port=5005, 
-            ssl_context='adhoc'
+            # ssl_context='adhoc'
     )
