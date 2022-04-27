@@ -1,0 +1,23 @@
+<html>
+<head>
+<title>MarketPlace HPC app</title>
+</head>
+<body>
+<h1>MarketPlace HPC app</h1>
+<form action="{{ url_for('resource_request') }}" method="post" enctype="text/plain">
+    Send request for the access to the resource. <br><br>
+    MarketPlace access token:<br>
+    <input type="text" name="comment" size="50"><br><br>
+    <input type="submit" value="Send">
+    <input type="reset" value="Reset">
+    </form>
+
+<h1>Register for the repository on resource</h1>
+<form action="{{ url_for('doregister') }}" method="post">
+    Create resourec and add user to database. <br><br>
+    MarketPlace access token:<br>
+    <input type="text" name="access_token" size=50><br>
+    <input type="submit" value="Submit">
+</form>
+</body>
+</html>  

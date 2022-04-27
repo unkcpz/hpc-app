@@ -6,7 +6,7 @@ from flask import Response, stream_with_context
 from flask import send_file
 from firecrest_sdk import Firecrest
 import requests
-from flask import Flask, flash, request, redirect, url_for
+from flask import Flask, flash, request, redirect, url_for, render_template
 from werkzeug.utils import secure_filename
 import uuid
 
@@ -66,6 +66,14 @@ def heartbeat(current_user):
     
     return resp, 200
 
+@app.route("/login/")
+def frontend():
+    return render_template('index.html')
+
+@app.route("/resource-request/", methods=["POST"])
+def resource_request():
+    return 'request sent', 200
+
 @app.route("/userinfo/", methods=["GET"])
 @token_required
 def get_userinfo(current_user):
@@ -82,6 +90,26 @@ def get_userinfo(current_user):
         }
     
     return resp, 200
+
+@app.route('/doregister', methods=['POST'])
+def doregister():
+    access_token = request.form['access_token']
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "HPC-app",
+        "Authorization": f"Bearer {access_token}",
+    }
+    resp = requests.get(
+        f'{request.url_root}/register/',
+        headers=headers,
+        verify=None,
+    )
+    resp, status_code = resp.json(), resp.status_code
+    if status_code < 300:
+        return resp['message'], status_code
+    else:
+        return resp['error'], status_code
+
 
 @app.route("/register/", methods=["GET"])
 @token_required
@@ -289,7 +317,8 @@ def forbidden(e):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, 
-            port=5005, 
-            # ssl_context='adhoc'
+    app.run(
+        debug=True, 
+        port=5005, 
+        # ssl_context='adhoc',
     )
