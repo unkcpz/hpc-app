@@ -12,7 +12,7 @@ import uuid
 
 load_dotenv()
 
-WHITE_LIST = ['jusong.yu@epfl.ch']
+WHITE_LIST = ['jusong.yu@epfl.ch', 'andreas.aigner@dcs-computing.com', 'simon.adorf@epfl.ch']
 # Setup the client for the specific account
 client = Firecrest(firecrest_url="https://firecrest.cscs.ch/")
 ROOT_FOLDER = '/scratch/snx3000/jyu/firecrest/'
