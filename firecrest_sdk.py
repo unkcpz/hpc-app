@@ -111,7 +111,7 @@ class Firecrest(CscsFirecrest):
                 url=url, headers=headers, data=data, files=files, verify=self._verify
             )
 
-        return self._json_response([resp], 201)
+        return self._json_response([resp], 200) # -> 201, but 201 will be regard as an error state by mp-sdk
     
     def simple_delete(self, target_path):
         """Blocking call to delete a small file.

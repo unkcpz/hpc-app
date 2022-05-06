@@ -17,7 +17,7 @@ WHITE_LIST = ['jusong.yu@epfl.ch', 'andreas.aigner@dcs-computing.com', 'simon.ad
 client = Firecrest(firecrest_url="https://firecrest.cscs.ch/")
 ROOT_FOLDER = '/scratch/snx3000/jyu/firecrest/'
 
-ALLOWED_EXTENSIONS = {'txt', 'sh', 'in'}
+ALLOWED_EXTENSIONS = {'txt', 'sh', 'in', 'sif', 'stl', 'asx'}
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -278,7 +278,7 @@ def upload_remote(current_user, resource):
         
         resp = client.simple_upload(binary_stream, target_path, filename)
     
-        return resp, 201
+        return resp, 200
     
 @app.route("/delete/<resource>", methods=["DELETE"])
 @token_required
