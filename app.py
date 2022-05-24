@@ -17,7 +17,7 @@ WHITE_LIST = ['jusong.yu@epfl.ch', 'andreas.aigner@dcs-computing.com', 'simon.ad
 client = Firecrest(firecrest_url="https://firecrest.cscs.ch/")
 ROOT_FOLDER = '/scratch/snx3000/jyu/firecrest/'
 
-ALLOWED_EXTENSIONS = {'txt', 'sh', 'in', 'sif', 'stl', 'asx'}
+ALLOWED_EXTENSIONS = {'txt', 'sh', 'in', 'sif', 'stl', 'asx', 'lic'}
 
 def allowed_file(filename):
     return '.' in filename and \
