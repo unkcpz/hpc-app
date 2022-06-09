@@ -162,14 +162,14 @@ def register(current_user):
 @token_required
 def create_job(current_user):
     """This will essentially create a workdir in user repo
-    and return the folder name as resourceId"""
+    and return the folder name as resourceid"""
     repo = email2repo(current_user['email'])
     
     # the folder name (resource) is a 
-    resource = str(uuid.uuid4())
+    resourceid = str(uuid.uuid4())
     
     try:
-        target_path = os.path.join(app.config['ROOT_FOLDER'], repo, resource)
+        target_path = os.path.join(app.config['ROOT_FOLDER'], repo, resourceid)
         client.mkdir(target_path=target_path)
     except Exception as e:
         return {
@@ -179,16 +179,16 @@ def create_job(current_user):
         }, 500
     else:
         return {
-            'resourceId': resource,
+            'resourceid': resourceid,
         }, 200
 
-@app.route("/jobs/run/<resource>", methods=["POST"])
+@app.route("/jobs/run/<resourceid>", methods=["POST"])
 @token_required
-def run_job(current_user, resource):
+def run_job(current_user, resourceid):
     """Submit job from the folder and return jobid"""
     repo = email2repo(current_user['email'])
     
-    workdir = os.path.join(ROOT_FOLDER, repo, resource)
+    workdir = os.path.join(ROOT_FOLDER, repo, resourceid)
     
     script_path = os.path.join(workdir, 'submit.sh')
     # TODO: check (error return code) the job script exist
@@ -197,7 +197,7 @@ def run_job(current_user, resource):
         user = User().get_by_email(current_user['email'])
         userid = user['_id']
         jobid = resp.get('jobid')
-        job = Jobs().create(userid=userid, jobid=jobid)
+        job = Jobs().create(userid=userid, jobid=jobid, resourceid=resourceid)
         
         resp['userid'] = job['userid']
         
@@ -210,12 +210,12 @@ def run_job(current_user, resource):
         
     return resp, 200
 
-# still use resource it will map to the jobid internally
-@app.route("/jobs/cancel/<resource>", methods=["POST"])
+# still use resourceid for job manipulation it will map to the jobid internally
+@app.route("/jobs/cancel/<resourceid>", methods=["POST"])
 @token_required
-def cancel_job(current_user, resource):
+def cancel_job(current_user, resourceid):
     """Submit job from the folder and return jobid"""
-    jobid = query(resource)
+    jobid = query(resourceid)
     try:
         resp = client.cancel(jobid=jobid)
         user = User().get_by_email(current_user['email'])
@@ -253,9 +253,9 @@ def list_jobs(current_user):
     
     return fresp, 200
 
-@app.route("/download/<resource>", methods=["GET"])
+@app.route("/download/<resourceid>", methods=["GET"])
 @token_required
-def download_remote(current_user, resource):
+def download_remote(current_user, resourceid):
     """
     Downloads the remote files from the cluster.
     :param path: path string relative to the parent ROOT_PATH=`/scratch/snx3000/jyu/firecrest/`
@@ -265,7 +265,7 @@ def download_remote(current_user, resource):
     
     data = request.json
     filename = data.get('filename')
-    source_path = os.path.join(ROOT_FOLDER, repo, resource, filename)
+    source_path = os.path.join(ROOT_FOLDER, repo, resourceid, filename)
     app.logger.debug(source_path)
     binary_stream = io.BytesIO()
     
@@ -277,9 +277,9 @@ def download_remote(current_user, resource):
     
     return resp, 200
 
-@app.route("/upload/<resource>", methods=["PUT"])
+@app.route("/upload/<resourceid>", methods=["PUT"])
 @token_required
-def upload_remote(current_user, resource):
+def upload_remote(current_user, resourceid):
     """
     Upload the file to the cluster. to folder ROOT_PATH=`/scratch/snx3000/jyu/firecrest/`
     """
@@ -294,7 +294,7 @@ def upload_remote(current_user, resource):
         }), 403
         
     file = request.files['file']
-    target_path = os.path.join(app.config['ROOT_FOLDER'], repo, resource)
+    target_path = os.path.join(app.config['ROOT_FOLDER'], repo, resourceid)
     
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
@@ -304,9 +304,9 @@ def upload_remote(current_user, resource):
     
         return resp, 200
     
-@app.route("/delete/<resource>", methods=["DELETE"])
+@app.route("/delete/<resourceid>", methods=["DELETE"])
 @token_required
-def delete_remote(current_user, resource):
+def delete_remote(current_user, resourceid):
     """
     Downloads the remote files from the cluster.
     :param path: path string relative to the parent ROOT_PATH=`/scratch/snx3000/jyu/firecrest/`
@@ -316,7 +316,7 @@ def delete_remote(current_user, resource):
     
     data = request.json
     filename = data.get('filename')
-    target_path = os.path.join(ROOT_FOLDER, repo, resource, filename)
+    target_path = os.path.join(ROOT_FOLDER, repo, resourceid, filename)
     
     resp = client.simple_delete(target_path=target_path)
     

@@ -21,7 +21,8 @@ info:
         - name: HPC app
           productId:
 servers:
-  - url: https://staging.materials-marketplace.eu/message-broker
+  - url: https://mp-hpc.herokuapp.com
+  # - url: https://staging.materials-marketplace.eu/message-broker
 
 paths:
 # Administrative paths
@@ -83,7 +84,7 @@ paths:
         '200':
           description: Success
           content:
-            resourceId:
+            resourceid:
               schema:
                 type: string
                 example: "3e22541c-a95e-4443-8cdc-0866171d343b"
@@ -97,7 +98,7 @@ paths:
         '404':
           description: Not found
 
-  /jobs/run/{resource}:
+  /jobs/run/{resourceid}:
     post:
       security:
         - bearerAuth: []
@@ -105,7 +106,7 @@ paths:
       operationId: startTransformation
       parameters: 
         - in: path
-          name: resource
+          name: resourceid
           schema: 
             type: string
           required: true
@@ -115,7 +116,7 @@ paths:
         '404':
           description: Not found
 
-  /download/{resource}:
+  /download/{resourceid}:
     get:
       security:
         - bearerAuth: []
@@ -123,7 +124,7 @@ paths:
       operationId: getDataset
       parameters:
         - in: path
-          name: resource
+          name: resourceid
           schema: 
             type: string
           required: true
@@ -139,7 +140,7 @@ paths:
         '400':
           description: Bad Request
 
-  /upload/{resource}:
+  /upload/{resourceid}:
     put:
       security:
         - bearerAuth: []
@@ -147,7 +148,7 @@ paths:
       operationId: updateDataset
       parameters:
         - in: path
-          name: resource
+          name: resourceid
           schema: 
             type: string
           required: true
@@ -159,7 +160,7 @@ paths:
         '400':
           description: Bad Request
 
-  /delete/{resource}:
+  /delete/{resourceid}:
     delete:
       security:
         - bearerAuth: []
@@ -167,13 +168,13 @@ paths:
       operationId: deleteDataset
       parameters:
         - in: path
-          name: resource
+          name: resourceid
           schema: 
             type: string
           required: true
       responses:
         '204':
-          description: The resource was deleted successfully.
+          description: The file is deleted.
         '404':
           description: Not found
  

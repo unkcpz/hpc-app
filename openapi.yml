@@ -78,7 +78,7 @@ paths:
         '200':
           description: Success
           content:
-            resourceId:
+            resourceid:
               schema:
                 type: string
                 example: "3e22541c-a95e-4443-8cdc-0866171d343b"
