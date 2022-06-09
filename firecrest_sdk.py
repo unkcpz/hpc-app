@@ -140,6 +140,20 @@ class Firecrest(CscsFirecrest):
         """
         # p=True so that always create parent folder
         super().mkdir(self._MACHINE, target_path, p=True)
+        
+    def cancel(self, jobid):
+        """Retrieves information about submitted jobs.
+        This call uses the `scancel` command.
+
+        :param machine: the machine name where the scheduler belongs to
+        :param jobid: the absolute target path (default [])
+        :type jobid: list of strings/integers, optional
+        :calls: DELETE `/compute/jobs/{jobid}`
+
+                GET `/tasks/{taskid}`
+        :rtype: dictionary
+        """
+        return super().cancel(machine=self._MACHINE, jobid=jobid)
             
     def poll(self, jobs=[], start_time=None, end_time=None):
         """Retrieves information about submitted jobs.

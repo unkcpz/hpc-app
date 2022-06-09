@@ -5,6 +5,7 @@ from pymongo import MongoClient
 
 load_dotenv()
 
+# The DB server is held on https://cloud.mongodb.com/v2
 DATABASE_URL=f'mongodb+srv://mphpc:{os.environ.get("password")}@mongodb-heroku-mp-hpc-a.dzddt.mongodb.net/hpcdb?retryWrites=true&w=majority'
 print(DATABASE_URL)
 client = MongoClient(DATABASE_URL)
@@ -123,13 +124,6 @@ class User:
                 "$set": data
             }
         )
-        user = self.get_by_id(userid)
-        return user
-
-    def delete(self, userid):
-        """Delete a user"""
-        Books().delete_by_userid(userid)
-        user = db.users.delete_one({"_id": bson.ObjectId(userid)})
         user = self.get_by_id(userid)
         return user
 

@@ -209,6 +209,30 @@ def run_job(current_user, resource):
         }, 500
         
     return resp, 200
+
+# still use resource it will map to the jobid internally
+@app.route("/jobs/cancel/<resource>", methods=["POST"])
+@token_required
+def cancel_job(current_user, resource):
+    """Submit job from the folder and return jobid"""
+    jobid = query(resource)
+    try:
+        resp = client.cancel(jobid=jobid)
+        user = User().get_by_email(current_user['email'])
+        userid = user['_id']
+        jobid = resp.get('jobid')
+        job = Jobs(jobid=jobid).update(state='cancel')
+        
+        resp['userid'] = job['userid']
+        
+    except Exception as e:
+        return {
+            "function": 'submit',
+            "error": "Something went wrong",
+            "message": str(e)
+        }, 500
+        
+    return resp, 200
         
 @app.route("/jobs/", methods=["GET"])
 @token_required
@@ -294,9 +318,9 @@ def delete_remote(current_user, resource):
     filename = data.get('filename')
     target_path = os.path.join(ROOT_FOLDER, repo, resource, filename)
     
-    client.simple_delete(target_path=target_path)
+    resp = client.simple_delete(target_path=target_path)
     
-    return '', 204
+    return resp, 200
 
 
 @app.errorhandler(403)

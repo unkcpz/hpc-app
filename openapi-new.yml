@@ -21,7 +21,7 @@ info:
         - name: HPC app
           productId:
 servers:
-  - url: https://mp-hpc.herokuapp.com
+  - url: https://staging.materials-marketplace.eu/message-broker
 
 paths:
 # Administrative paths
