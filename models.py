@@ -9,70 +9,54 @@ load_dotenv()
 DATABASE_URL=f'mongodb+srv://mphpc:{os.environ.get("password")}@mongodb-heroku-mp-hpc-a.dzddt.mongodb.net/hpcdb?retryWrites=true&w=majority'
 print(DATABASE_URL)
 client = MongoClient(DATABASE_URL)
-db = client.myDatabase
+db = client.myDatabase # TODO: change the name of remote DB, need to ask Andreas to move it
 
 class Jobs:
-    """Jobs Model"""
+    """Jobs Model
+    
+    jobid is unique and the _id of entity is the objectId of jobid
+    resourceid is generate in hpc-app. Should be unique, but for assurance, 
+    find it with userid.
+    """
     def __init__(self):
         return
+    
+    def get_by_jobid(self, jobid):
+        """Get a job given its jobid"""
+        job = db.jobs.find_one({"_id": bson.ObjectId(jobid)})
+        if not job:
+            return None
+        
+        return job
 
-    def create(self, userid, jobid):
+    def create(self, userid, jobid, resourceid):
         """Create a new job in DB"""
-        job = self.get_by_userid_and_jobid(userid, jobid)
+        job = self.get_by_jobid(jobid)
         if job:
-            return
+            return None
         new_job = db.jobs.insert_one(
             {
                 "jobid": jobid,
                 "userid": userid,
+                "resourceid": resourceid,
+                # TODO: more metadata (ctime, mtime ..)
             }
         )
-        return self.get_by_id(new_job.inserted_id)
+        return self.get_by_jobid(new_job.inserted_id)
     
-    def get_by_userid_and_jobid(self, userid, jobid):
-        """job"""
-        job = db.jobs.find_one({"userid": userid, "jobid": jobid})
+    def get_by_userid_and_resourceid(self, userid, resourceid):
+        """with resourceid I can retrace back to find jobid"""
+        job = db.jobs.find_one({"userid": userid, "resourceid": resourceid})
         if not job:
-            return
-        job["_id"] = str(job["_id"])
-        return 
-    
-    def get_by_id(self, jobid):
-        """Get a job given its jobid"""
-        job = db.jobs.find_one({"_id": bson.ObjectId(jobid)})
-        if not job:
-            return
-        job["_id"] = str(job["_id"])
+            return None
+        
         return job
-
-    def get_by_userid(self, userid):
-        """Get all jobs created by a user"""
+    
+    def get_joblist_by_userid(self, userid):
+        """Get all jobs created by a user return a list of jobid belong to this user"""
         jobs = db.jobs.find({"userid": userid})
         return [job.get('jobid') for job in jobs]
     
-    def get_all(self):
-        """For admin only"""
-        books = db.books.find()
-        return [{**book, "_id": str(book["_id"])} for book in books]
-
-
-    def update(self, book_id, title="", description="", image_url="", category="", userid=""):
-        """Update a book"""
-        data={}
-        if title: data["title"]=title
-        if description: data["description"]=description
-        if image_url: data["image_url"]=image_url
-        if category: data["category"]=category
-
-        book = db.books.update_one(
-            {"_id": bson.ObjectId(book_id)},
-            {
-                "$set": data
-            }
-        )
-        book = self.get_by_id(book_id)
-        return book
-
 class User:
     """User Model"""
     def __init__(self):

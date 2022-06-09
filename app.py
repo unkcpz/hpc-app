@@ -215,19 +215,18 @@ def run_job(current_user, resourceid):
 @token_required
 def cancel_job(current_user, resourceid):
     """Submit job from the folder and return jobid"""
-    jobid = query(resourceid)
     try:
-        resp = client.cancel(jobid=jobid)
         user = User().get_by_email(current_user['email'])
         userid = user['_id']
-        jobid = resp.get('jobid')
-        job = Jobs(jobid=jobid).update(state='cancel')
+        jobid = Jobs().get_by_userid_and_resourceid(userid=userid, resourceid=resourceid).get('jobid')
         
-        resp['userid'] = job['userid']
+        app.logger.debug(userid)
+        app.logger.debug(jobid)
         
+        resp = client.cancel(jobid=jobid)
     except Exception as e:
         return {
-            "function": 'submit',
+            "function": 'cancel',
             "error": "Something went wrong",
             "message": str(e)
         }, 500
@@ -240,7 +239,7 @@ def list_jobs(current_user):
     user = User().get_by_email(current_user['email'])
     userid = user['_id']
     
-    jobs = Jobs().get_by_userid(userid)
+    jobs = Jobs().get_joblist_by_userid(userid)
     app.logger.debug(userid)
     app.logger.debug(jobs)
     if not jobs:
