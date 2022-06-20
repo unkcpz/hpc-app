@@ -1,12 +1,11 @@
-import jwt, os
+import os
 import io
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
-from flask import Response, stream_with_context
 from flask import send_file
 from firecrest_sdk import Firecrest
 import requests
-from flask import Flask, flash, request, redirect, url_for, render_template
+from flask import Flask, flash, request, render_template
 from werkzeug.utils import secure_filename
 import uuid
 
@@ -32,9 +31,6 @@ app.config['ROOT_FOLDER'] = ROOT_FOLDER
 
 from models import Jobs, User
 from auth_middleware import token_required
-
-def helper_get_db_userid(mp_user):
-    pass
 
 def email2repo(email):
     """Since the username allowed space character contained it is not proper to be 
@@ -200,6 +196,8 @@ def run_job(current_user, resourceid):
         job = Jobs().create(userid=userid, jobid=jobid, resourceid=resourceid)
         
         resp['userid'] = job['userid']
+        resp['jobid'] = job['jobid']
+        resp['resourceid'] = job['resourceid']
         
     except Exception as e:
         return {
@@ -224,6 +222,8 @@ def cancel_job(current_user, resourceid):
         app.logger.debug(jobid)
         
         resp = client.cancel(jobid=jobid)
+        # TODO update the state of job entity.
+        
     except Exception as e:
         return {
             "function": 'cancel',
@@ -232,6 +232,37 @@ def cancel_job(current_user, resourceid):
         }, 500
         
     return resp, 200
+
+@app.route("/jobs/delete/<resourceid>", methods=["DELETE"])
+@token_required
+def delete_job(current_user, resourceid):
+    """Delete job from list jobid DB. This will not actually delete the
+    remote folder but simply remove the entity from DB list to unlink. 
+    The remote folder in the /scratch should be cleanup in period by setting in HPC.
+    """
+    try:
+        user = User().get_by_email(current_user['email'])
+        userid = user['_id']
+        jobid = Jobs().get_by_userid_and_resourceid(userid=userid, resourceid=resourceid).get('jobid')
+        
+        app.logger.debug(userid)
+        app.logger.debug(jobid)
+        
+        # simply delete DB entity from the list, no matter how is the job state.
+        # Need to added in future that job must not in running states first. TODO.
+        r = Jobs().delete(jobid=jobid)
+        print(r)
+    except Exception as e:
+        return {
+            "function": 'delete_job',
+            "error": "Something went wrong",
+            "message": str(e)
+        }, 500
+    else:
+        return {
+            "function": 'delete_job',
+            "message": f"job {jobid} of {resourceid} detached from DB."    
+        }, 200
         
 @app.route("/jobs/", methods=["GET"])
 @token_required
@@ -268,13 +299,39 @@ def download_remote(current_user, resourceid):
     app.logger.debug(source_path)
     binary_stream = io.BytesIO()
     
-    client.simple_download(source_path=source_path, target_path=binary_stream)
+    try:
+        client.simple_download(source_path=source_path, target_path=binary_stream)
 
-    download_name = os.path.basename(filename)
-    binary_stream.seek(0) # buffer position from start
-    resp = send_file(path_or_file=binary_stream, download_name=download_name)
+        download_name = os.path.basename(filename)
+        binary_stream.seek(0) # buffer position from start
+        resp = send_file(path_or_file=binary_stream, download_name=download_name)
+    except Exception as exc:
+        return {"message": f"Failed with {exc}"}, 402
+    else:
+        return resp, 200
+
+@app.route("/list/<resourceid>", methods=["GET"])
+@token_required
+def list_remote(current_user, resourceid):
+    """
+    list the remote files of resourceid folder from the cluster.
+    :param path: path string relative to the parent ROOT_PATH=`/scratch/snx3000/jyu/firecrest/`
+    :return: list of files.
+    """
+    repo = email2repo(current_user['email'])
     
-    return resp, 200
+    data = request.json or {}
+    filename = data.get('filename', '.')
+    target_path = os.path.join(ROOT_FOLDER, repo, resourceid, filename)
+    
+    try:
+        resp = client.list_files(target_path=target_path)
+    except Exception as exc:
+        return {"message": f"Failed with {exc}"}, 402
+    else:
+        resp = {'output': resp}
+    
+        return resp, 200
 
 @app.route("/upload/<resourceid>", methods=["PUT"])
 @token_required
@@ -302,12 +359,14 @@ def upload_remote(current_user, resourceid):
         resp = client.simple_upload(binary_stream, target_path, filename)
     
         return resp, 200
-    
+        
 @app.route("/delete/<resourceid>", methods=["DELETE"])
 @token_required
 def delete_remote(current_user, resourceid):
     """
-    Downloads the remote files from the cluster.
+    Will be map to deleteDataset Downloads the remote files from the cluster.
+    This is for delete a singlefile in the resource.
+    
     :param path: path string relative to the parent ROOT_PATH=`/scratch/snx3000/jyu/firecrest/`
     :return: file.
     """
@@ -317,9 +376,12 @@ def delete_remote(current_user, resourceid):
     filename = data.get('filename')
     target_path = os.path.join(ROOT_FOLDER, repo, resourceid, filename)
     
-    resp = client.simple_delete(target_path=target_path)
-    
-    return resp, 200
+    try:
+        client.simple_delete(target_path=target_path)
+    except Exception as exc:
+        return {"message": f"Failed with {exc}"}, 402
+    else:
+        return {"message": f"Delete the file {filename} from {resourceid}"}, 200
 
 
 @app.errorhandler(403)
@@ -343,5 +405,4 @@ if __name__ == "__main__":
     app.run(
         debug=True, 
         port=5005, 
-        # ssl_context='adhoc',
     )

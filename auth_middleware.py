@@ -1,8 +1,6 @@
 from functools import wraps
-from flask import request, abort
-from flask import current_app
+from flask import request
 import requests
-import json
 
 USERINFO_URL = "https://www.materials-marketplace.eu/auth/realms/marketplace/protocol/openid-connect/userinfo"
 

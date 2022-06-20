@@ -1,7 +1,6 @@
 from firecrest import ClientCredentialsAuthorization
 from firecrest import Firecrest as CscsFirecrest
 import requests
-import io
 import os
 from contextlib import nullcontext
 from dotenv import load_dotenv
@@ -129,7 +128,7 @@ class Firecrest(CscsFirecrest):
         data = {"targetPath": target_path}
         resp = requests.delete(url=url, headers=headers, data=data, verify=self._verify)
         
-        self._json_response([resp], 204)
+        return self._json_response([resp], 204)
         
     def mkdir(self, target_path):
         """Creates a new directory.
@@ -139,7 +138,19 @@ class Firecrest(CscsFirecrest):
         :rtype: None
         """
         # p=True so that always create parent folder
-        super().mkdir(self._MACHINE, target_path, p=True)
+        return super().mkdir(self._MACHINE, target_path, p=True)
+        
+    def list_files(self, target_path):
+        """Returns a list of files in a directory.
+
+        :param targetPath: the absolute target path
+        :type targetPath: string
+        :param showhidden: show hidden files
+        :type showhidden: boolean, optional
+        :calls: GET `/utilities/ls`
+        :rtype: list of files
+        """
+        return super().list_files(self._MACHINE, target_path)
         
     def cancel(self, jobid):
         """Retrieves information about submitted jobs.

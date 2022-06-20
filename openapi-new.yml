@@ -4,7 +4,7 @@ openapi: 3.0.0
 info:
     title: HPC app
     description: Access to HPC through firecrest
-    version: 0.1.1
+    version: 0.1.2
     x-application-name: HPC app
     x-oauth-client:
         client-id: 5fd66c68-50e9-474a-b55d-148777ae3efd
@@ -104,6 +104,24 @@ paths:
         - bearerAuth: []
       description: Start execution of a Transformation
       operationId: startTransformation
+      parameters: 
+        - in: path
+          name: resourceid
+          schema: 
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Success
+        '404':
+          description: Not found
+
+  /jobs/delete/{resourceid}:
+    post:
+      security:
+        - bearerAuth: []
+      description: Start execution of a Transformation
+      operationId: deleteTransformation
       parameters: 
         - in: path
           name: resourceid
