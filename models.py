@@ -23,7 +23,7 @@ class Jobs:
     
     def get_by_jobid(self, jobid):
         """Get a job given its jobid"""
-        job = db.jobs.find_one({"_id": bson.ObjectId(jobid)})
+        job = db.jobs.find_one({"jobid": jobid})
         if not job:
             return None
         
@@ -33,6 +33,7 @@ class Jobs:
         """Create a new job in DB"""
         job = self.get_by_jobid(jobid)
         if job:
+            # the job exist return None do nothing
             return None
         new_job = db.jobs.insert_one(
             {
@@ -42,7 +43,9 @@ class Jobs:
                 # TODO: more metadata (ctime, mtime ..)
             }
         )
-        return self.get_by_jobid(new_job.inserted_id)
+        job = db.jobs.find_one({"_id": new_job.inserted_id})
+        
+        return self.get_by_jobid(job["jobid"])
     
     def get_by_userid_and_resourceid(self, userid, resourceid):
         """with resourceid I can retrace back to find jobid"""
@@ -56,6 +59,12 @@ class Jobs:
         """Get all jobs created by a user return a list of jobid belong to this user"""
         jobs = db.jobs.find({"userid": userid})
         return [job.get('jobid') for job in jobs]
+    
+    def delete(self, jobid):
+        """Remove the entity from the list."""
+        db.jobs.delete_one({"jobid": jobid})
+        
+        return (jobid)
     
 class User:
     """User Model"""
