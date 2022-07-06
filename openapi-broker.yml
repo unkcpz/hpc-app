@@ -1,0 +1,185 @@
+---
+openapi: 3.0.0
+
+info:
+    title: HPC gateway (broker)
+    description: Access to HPC through firecrest (inside FW)
+    version: 0.1.0
+    x-application-name: HPC gateway (broker)
+    x-oauth-client:
+        client-id:
+        scopes:
+            - email
+            - openid
+            - profile
+        callback: https://mp-hpc.herokuapp.com/auth_callback
+    x-external-hostname: https://mp-hpc.herokuapp.com
+    x-image: https://raw.githubusercontent.com/aiidalab/aiidalab-widgets-base/master/miscellaneous/logos/aiidalab.png
+    x-contacts:
+        - jusong.yu@epfl.ch
+    x-products:
+        - name: HPC gateway
+          productId:
+servers:
+  - url: https://staging.materials-marketplace.eu/message-broker
+
+paths:
+# Administrative paths
+  /:
+    get:
+      security:
+        - bearerAuth: []
+      description: To check if an application is alive
+      operationId: heartbeat
+      responses:
+        '200':
+          description: Success
+          content:
+            String:
+              schema:
+                type: string
+                example: "Is Alive"
+        '404':
+          description: Not found
+
+  /jobs/:
+    get:
+      security:
+        - bearerAuth: []
+      description: Get the List of jobs
+      operationId: getTransformationList
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  example: ['transformationID-1','transformationID-2','...']
+        '404':
+          description: Not found  
+
+  /login/:
+    get:
+      security:
+        - bearerAuth: []
+      description: Goes to login page of the application
+      operationId: frontend
+      responses:
+        '200':
+          description: Navigates to the page
+        '404':
+          description: Not found
+
+  /jobs/new:
+    post:
+      security:
+        - bearerAuth: []
+      description: Initialize a Transformation
+      operationId: newTransformation
+      responses:
+        '200':
+          description: Success
+          content:
+            resourceId:
+              schema:
+                type: string
+                example: "3e22541c-a95e-4443-8cdc-0866171d343b"
+        '400':
+          description: Bad Request
+          content:
+            error:
+              schema:
+                type: string
+                example: "Wrong configuration input"
+        '404':
+          description: Not found
+
+  /jobs/run/{resource}:
+    post:
+      security:
+        - bearerAuth: []
+      description: Start execution of a Transformation
+      operationId: startTransformation
+      parameters: 
+        - in: path
+          name: resource
+          schema: 
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Success
+        '404':
+          description: Not found
+
+  /download/{resource}:
+    get:
+      security:
+        - bearerAuth: []
+      description: Fetches a particular Dataset
+      operationId: getDataset
+      parameters:
+        - in: path
+          name: resource
+          schema: 
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            "*/*":
+              schema:
+                type: object
+        '404':
+          description: Not found
+        '400':
+          description: Bad Request
+
+  /upload/{resource}:
+    put:
+      security:
+        - bearerAuth: []
+      description: Edit a dataset
+      operationId: updateDataset
+      parameters:
+        - in: path
+          name: resource
+          schema: 
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Success
+        '404':
+          description: Not found
+        '400':
+          description: Bad Request
+
+  /delete/{resource}:
+    delete:
+      security:
+        - bearerAuth: []
+      description: Delete a dataset
+      operationId: deleteDataset
+      parameters:
+        - in: path
+          name: resource
+          schema: 
+            type: string
+          required: true
+      responses:
+        '204':
+          description: The resource was deleted successfully.
+        '404':
+          description: Not found
+ 
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
