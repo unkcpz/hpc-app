@@ -2,3 +2,4 @@ __pycache__
 .env
 .testuser
 app.info
+*.egg-info/

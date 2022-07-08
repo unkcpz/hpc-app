@@ -62,6 +62,12 @@ def heartbeat(current_user):
     
     return resp, 200
 
+@app.route("/broker")
+def broker():
+    resp = {'test': 'DONE!'}
+    
+    return resp, 200
+
 @app.route("/login/")
 def frontend():
     return render_template('index.html')

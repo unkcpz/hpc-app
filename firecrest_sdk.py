@@ -1,4 +1,4 @@
-from firecrest import ClientCredentialsAuthorization
+from firecrest import ClientCredentialsAuth
 from firecrest import Firecrest as CscsFirecrest
 import requests
 import os
@@ -13,18 +13,9 @@ client_secret = os.environ.get('FIRECREST_CLIENT_SECRET')
 token_uri = "https://auth.cscs.ch/auth/realms/cscs/protocol/openid-connect/token"
 
 # Create an authorization account object with Client Credentials authorization grant
-keycloak = ClientCredentialsAuthorization(
-    client_id, client_secret, token_uri, debug=False
+keycloak = ClientCredentialsAuth(
+    client_id, client_secret, token_uri
 )
-
-
-class MyKeycloakCCAccount:
-    def __init__(self):
-        pass
-
-    @keycloak.account_login
-    def get_access_token(self):
-        return keycloak.get_access_token()
 
 class Firecrest(CscsFirecrest):
     
@@ -32,7 +23,7 @@ class Firecrest(CscsFirecrest):
     _SYSTEM = 'daint'
     
     def __init__(self, firecrest_url, verify=None, sa_role="firecrest-sa"):
-        super().__init__(firecrest_url, authorization=MyKeycloakCCAccount())
+        super().__init__(firecrest_url, authorization=keycloak)
     
     def heartbeat(self):
         """Returns information about a system as the heartbeat check.
