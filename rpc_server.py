@@ -1,6 +1,10 @@
 import json
 import requests
+import os
 from urllib.parse import urljoin
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from marketplace_standard_app_api.models.message_broker import (
     MessageBrokerRequestModel,
@@ -8,6 +12,9 @@ from marketplace_standard_app_api.models.message_broker import (
 )
 
 from marketplace.message_broker.rpc_server import RpcServer
+
+gateway_client_id = os.environ.get('GATEWAY_CLIENT_ID')
+gateway_client_secret = os.environ.get('GATEWAY_CLIENT_SECRET')
 
 HPC_GATEWAY_URL = "http://127.0.0.1:5005/"
 
@@ -49,13 +56,6 @@ def relay(request: MessageBrokerRequestModel):
 def hpc_message_relayer(
     request_message: MessageBrokerRequestModel,
 ) -> MessageBrokerResponseModel:
-    # print("Routing to endpoint %r..." % request_message.endpoint)
-    # payload = json.loads(request_message.body) if request_message.body else {}
-    # print(payload)
-    # print(request_message)
-    # result = len(payload)
-    # response = {"numberOfKeysInPayload": str(result)}
-    # print("Done!")
     
     response, status_code = relay(request_message)
     print(request_message)
@@ -67,11 +67,10 @@ def hpc_message_relayer(
     )
     return response_message
 
-
 rpc_server = RpcServer(
     host="staging.materials-marketplace.eu",
-    application_id="dc67d85e-7945-49fa-bf85-3159a8358f85",
-    application_secret="2366c94a-1361-4c85-9016-e16b1fe7dfa1",
+    application_id=gateway_client_id,
+    application_secret=gateway_client_secret,
     message_handler=hpc_message_relayer,
 )
 rpc_server.consume_messages()
